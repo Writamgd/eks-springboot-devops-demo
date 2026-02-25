@@ -87,8 +87,8 @@ pipeline {
             steps {
                 sh """
                 aws eks update-kubeconfig \
-                --region ${AWS_REGION} \
-                --name ${CLUSTER_NAME}
+                --region us-east-1 \ \
+                --name eksdemo-cluster
                 """
             }
         }
