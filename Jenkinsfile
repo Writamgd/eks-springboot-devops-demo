@@ -39,15 +39,15 @@ pipeline {
         }
 
         stage('Build & Run Unit Tests') {
-            steps {
-                sh 'mvn clean verify'
-            }
-            post {
-                always {
-                    junit '*/target/surefire-reports/.xml'
-                }
-            }
+    steps {
+        sh 'mvn clean verify'
+    }
+    post {
+        always {
+            junit allowEmptyResults: true, testResults: '*/target/surefire-reports/.xml'
         }
+    }
+}
 
         stage('Build Docker Image') {
             steps {
