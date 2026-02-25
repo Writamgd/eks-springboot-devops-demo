@@ -36,9 +36,14 @@ pipeline {
             }
         }
 
-        stage('Build Maven App') {
+        stage('Build & Run Unit Tests') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn clean verify'
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                }
             }
         }
 
@@ -114,7 +119,7 @@ pipeline {
             echo "🚀 Deployment Successful! Image: ${IMAGE_URI}"
         }
         failure {
-            echo "❌ Pipeline Failed!"
+            echo "❌ Pipeline Failed! Check logs."
         }
     }
 }
