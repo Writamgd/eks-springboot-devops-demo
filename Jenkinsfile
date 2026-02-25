@@ -30,8 +30,10 @@ pipeline {
         stage('Terraform Init & Apply') {
             steps {
                 dir('infra/environments/dev') {
-                    sh 'terraform init'
-                    sh 'terraform apply -auto-approve'
+                    sh '''
+                    terraform init
+                    terraform apply -auto-approve
+                    '''
                 }
             }
         }
@@ -42,60 +44,66 @@ pipeline {
             }
             post {
                 always {
-                    junit '**/target/surefire-reports/*.xml'
+                    junit '*/target/surefire-reports/.xml'
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh """
+                sh '''
                 docker build -t ${ECR_REPO}:${IMAGE_TAG} .
-                """
+                '''
             }
         }
 
         stage('Login to ECR') {
             steps {
-                sh """
+                sh '''
                 aws ecr get-login-password --region ${AWS_REGION} \
                 | docker login --username AWS --password-stdin \
                 ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                """
+                '''
             }
         }
 
         stage('Create ECR Repository If Not Exists') {
             steps {
-                sh """
+                sh '''
                 aws ecr describe-repositories --repository-names ${ECR_REPO} --region ${AWS_REGION} \
                 || aws ecr create-repository --repository-name ${ECR_REPO} --region ${AWS_REGION}
-                """
+                '''
             }
         }
 
         stage('Tag & Push Image') {
             steps {
-                sh """
+                sh '''
                 docker tag ${ECR_REPO}:${IMAGE_TAG} ${IMAGE_URI}
                 docker push ${IMAGE_URI}
-                """
+                '''
             }
         }
 
         stage('Update kubeconfig') {
             steps {
-                sh """
+                sh '''
+                export HOME=/var/lib/jenkins
+                mkdir -p /var/lib/jenkins/.kube
+
                 aws eks update-kubeconfig \
-                --region us-east-1 \ \
-                --name eksdemo-cluster
-                """
+                  --region ${AWS_REGION} \
+                  --name ${CLUSTER_NAME} \
+                  --kubeconfig /var/lib/jenkins/.kube/config
+                '''
             }
         }
+
         stage('Debug Identity') {
             steps {
                 sh '''
-                echo "WHOAMI:"
+                echo "================ DEBUG INFO ================"
+                echo "User:"
                 whoami
 
                 echo "HOME:"
@@ -104,33 +112,33 @@ pipeline {
                 echo "AWS Identity:"
                 aws sts get-caller-identity
 
-                echo "KUBECONFIG:"
-                echo $KUBECONFIG || echo "Not set"
+                echo "Kubeconfig content:"
+                cat /var/lib/jenkins/.kube/config
 
-                kubectl config view
-            """
-    }
-}
+                echo "Kubectl test:"
+                kubectl get nodes
+                echo "============================================"
+                '''
+            }
+        }
 
         stage('Deploy to EKS') {
-             steps {
-                sh """
+            steps {
+                sh '''
                 export HOME=/var/lib/jenkins
                 export KUBECONFIG=/var/lib/jenkins/.kube/config
 
-                aws sts get-caller-identity
-                kubectl get nodes
                 kubectl apply -f k8s/deployment.yaml
-            """
-    }
-}
+                '''
+            }
+        }
 
         stage('Verify Deployment') {
             steps {
-                sh """
+                sh '''
                 kubectl rollout status deployment/eksdemo-deployment
                 kubectl get svc eksdemo-service
-                """
+                '''
             }
         }
     }
