@@ -123,15 +123,18 @@ pipeline {
         }
 
         stage('Deploy to EKS') {
-            steps {
-                sh '''
-                export HOME=/var/lib/jenkins
-                export KUBECONFIG=/var/lib/jenkins/.kube/config
+    steps {
+        sh """
+        export HOME=/var/lib/jenkins
+        export KUBECONFIG=/var/lib/jenkins/.kube/config
 
-                kubectl apply -f k8s/deployment.yaml
-                '''
-            }
-        }
+        kubectl apply -f k8s/deployment.yaml
+
+        kubectl set image deployment/eksdemo-deployment \
+        eksdemo-app=${IMAGE_URI}
+        """
+    }
+}
 
         stage('Verify Deployment') {
             steps {
