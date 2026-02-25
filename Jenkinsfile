@@ -94,15 +94,17 @@ pipeline {
         }
 
         stage('Deploy to EKS') {
-            steps {
+             steps {
                 sh """
-                sed -i "s|IMAGE_PLACEHOLDER|${IMAGE_URI}|g" k8s/deployment.yaml
+                export HOME=/var/lib/jenkins
+                export KUBECONFIG=/var/lib/jenkins/.kube/config
 
+                aws sts get-caller-identity
+                kubectl get nodes
                 kubectl apply -f k8s/deployment.yaml
-                kubectl apply -f k8s/service.yaml
-                """
-            }
-        }
+        """
+    }
+}
 
         stage('Verify Deployment') {
             steps {
