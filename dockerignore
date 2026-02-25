@@ -2,4 +2,7 @@ target/
 .git
 .gitignore
 node_modules
-*.log   
+*.log
+
+infra/
+.terraform/
