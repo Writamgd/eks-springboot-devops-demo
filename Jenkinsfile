@@ -92,6 +92,25 @@ pipeline {
                 """
             }
         }
+        stage('Debug Identity') {
+            steps {
+                sh '''
+                echo "WHOAMI:"
+                whoami
+
+                echo "HOME:"
+                echo $HOME
+
+                echo "AWS Identity:"
+                aws sts get-caller-identity
+
+                echo "KUBECONFIG:"
+                echo $KUBECONFIG || echo "Not set"
+
+                kubectl config view
+            """
+    }
+}
 
         stage('Deploy to EKS') {
              steps {
@@ -102,7 +121,7 @@ pipeline {
                 aws sts get-caller-identity
                 kubectl get nodes
                 kubectl apply -f k8s/deployment.yaml
-        """
+            """
     }
 }
 
