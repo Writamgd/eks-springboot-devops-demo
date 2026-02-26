@@ -118,21 +118,21 @@ pipeline {
         }
 
         stage('Get LoadBalancer DNS') {
-            steps {
-                sh """
-                echo "Waiting for LoadBalancer..."
-                sleep 30
+    steps {
+        sh '''
+        echo "Waiting for LoadBalancer..."
+        sleep 30
 
-                DNS=$(kubectl get svc eksdemo-service \
-                -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+        DNS=$(kubectl get svc eksdemo-service \
+        -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
 
-                echo "======================================="
-                echo "Application URL:"
-                echo "http://$DNS"
-                echo "======================================="
-                """
-            }
-        }
+        echo "======================================="
+        echo "Application URL:"
+        echo "http://$DNS"
+        echo "======================================="
+        '''
+    }
+}
     }
 
     post {
