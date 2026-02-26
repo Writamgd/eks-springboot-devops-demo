@@ -46,9 +46,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh """
-                docker build -t ${ECR_REPO}:${IMAGE_TAG} .
-                """
+                sh "docker build -t ${ECR_REPO}:${IMAGE_TAG} ."
             }
         }
 
@@ -95,7 +93,10 @@ pipeline {
         stage('Deploy to EKS') {
             steps {
                 sh """
-                kubectl apply -f k8s/deployment.yaml
+                # Apply ALL manifests (deployment + service)
+                kubectl apply -f k8s/
+
+                # Update image to new build
                 kubectl set image deployment/eksdemo-deployment \
                 eksdemo-app=${IMAGE_URI}
                 """
@@ -106,8 +107,29 @@ pipeline {
             steps {
                 sh """
                 kubectl rollout status deployment/eksdemo-deployment
+
+                echo "Pods:"
                 kubectl get pods
+
+                echo "Services:"
                 kubectl get svc
+                """
+            }
+        }
+
+        stage('Get LoadBalancer DNS') {
+            steps {
+                sh """
+                echo "Waiting for LoadBalancer..."
+                sleep 30
+
+                DNS=$(kubectl get svc eksdemo-service \
+                -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+                echo "======================================="
+                echo "Application URL:"
+                echo "http://$DNS"
+                echo "======================================="
                 """
             }
         }
